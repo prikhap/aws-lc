@@ -135,21 +135,22 @@ private:
             }
             auto elf = binary.get();
             if (!elf) {
-            LOG_ERROR("Failed to get ELF binary");
-            return false;
-            }
-
-
-            // Find boundary symbols
-            const auto* text_start = elf->get_symbol("_BORINGSSL_bcm_text_start");
-            const auto* text_end = elf->get_symbol("_BORINGSSL_bcm_text_end");
-            const auto* rodata_start = elf->get_symbol("_BORINGSSL_bcm_rodata_start");
-            const auto* rodata_end = elf->get_symbol("_BORINGSSL_bcm_rodata_end");
-
-            if (!text_start || !text_end) {
-                LOG_ERROR("Could not find text boundary symbols");
+                LOG_ERROR("Failed to get ELF binary");
                 return false;
             }
+
+            // Find boundary symbols
+            const auto* text_start = elf->get_symbol("BORINGSSL_bcm_text_start");
+            if (!text_start) {
+                LOG_ERROR("Could not find BORINGSSL_bcm_text_start symbol");
+            }
+            const auto* text_end = elf->get_symbol("BORINGSSL_bcm_text_end");
+            if (!text_end) {
+                LOG_ERROR("Could not find BORINGSSL_bcm_text_end symbol");
+            }
+            const auto* rodata_start = elf->get_symbol("BORINGSSL_bcm_rodata_start");
+            const auto* rodata_end = elf->get_symbol("BORINGSSL_bcm_rodata_end");
+
 
             // Find the sections containing these symbols
             const LIEF::ELF::Section* text_section = nullptr;
@@ -158,16 +159,18 @@ private:
             for (const auto& section : elf->sections()) {
                 if (section.name() == ".text") {
                     text_section = &section;
+                    LOG_INFO("Found .text section at virtual address: 0x%lx", section.virtual_address());
                 }
                 if (section.name() == ".rodata") {
                     rodata_section = &section;
+                    LOG_INFO("Found .rodata section at virtual address: 0x%lx", section.virtual_address());
                 }
             }
 
             if (!text_section) {
                 LOG_ERROR("Could not locate .text section");
                 return false;
-            }
+                                 }
 
             // Calculate module boundaries within sections
             auto text_sec_addr = text_section->virtual_address();
