@@ -1,0 +1,85 @@
+From dea6a384d56f631eba23188f57dd4e4d84c10657 Mon Sep 17 00:00:00 2001
+From: Justin W Smith <justsmth@amazon.com>
+Date: Fri, 25 Apr 2025 21:19:12 +0000
+Subject: [PATCH] AWS-LC Support
+
+---
+ lib/tpm2_identity_util.c      | 2 +-
+ lib/tpm2_openssl.c            | 4 ++--
+ tools/misc/tpm2_checkquote.c  | 2 +-
+ tools/tpm2_getekcertificate.c | 4 ++--
+ 4 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/lib/tpm2_identity_util.c b/lib/tpm2_identity_util.c
+index fbf1e938..2c6448d3 100644
+--- a/lib/tpm2_identity_util.c
++++ b/lib/tpm2_identity_util.c
+@@ -91,7 +91,7 @@ static bool share_secret_with_tpm2_rsa_public_key(TPM2B_DIGEST *protection_seed,
+         goto error;
+     }
+ 
+-    rc = EVP_PKEY_CTX_set0_rsa_oaep_label(ctx, newlabel, label_len);
++    rc = EVP_PKEY_CTX_set0_rsa_oaep_label(ctx, (uint8_t*)newlabel, label_len);
+     if (rc <= 0) {
+         LOG_ERR("Failed EVP_PKEY_CTX_set0_rsa_oaep_label");
+         free(newlabel);
+diff --git a/lib/tpm2_openssl.c b/lib/tpm2_openssl.c
+index d2f07a7c..ca1a6b40 100644
+--- a/lib/tpm2_openssl.c
++++ b/lib/tpm2_openssl.c
+@@ -36,7 +36,7 @@ int tpm2_openssl_halgid_from_tpmhalg(TPMI_ALG_HASH algorithm) {
+         return NID_sha384;
+     case TPM2_ALG_SHA512:
+         return NID_sha512;
+-#if OPENSSL_VERSION_NUMBER >= 0x10101000L
++#if OPENSSL_VERSION_NUMBER >= 0x10101000L && HAVE_EVP_SM3
+ 	case TPM2_ALG_SM3_256:
+ 		return NID_sm3;
+ #endif
+@@ -666,7 +666,7 @@ static const struct {
+     { TPM2_ECC_NIST_P256, NID_X9_62_prime256v1 },
+     { TPM2_ECC_NIST_P384, NID_secp384r1        },
+     { TPM2_ECC_NIST_P521, NID_secp521r1        },
+-#if OPENSSL_VERSION_NUMBER >= 0x10101003L
++#if OPENSSL_VERSION_NUMBER >= 0x10101003L && HAVE_EVP_SM3
+     { TPM2_ECC_SM2_P256,  NID_sm2              },
+ #endif
+     /*
+diff --git a/tools/misc/tpm2_checkquote.c b/tools/misc/tpm2_checkquote.c
+index 498dffbc..d5bef7af 100644
+--- a/tools/misc/tpm2_checkquote.c
++++ b/tools/misc/tpm2_checkquote.c
+@@ -110,7 +110,7 @@ static bool verify(void) {
+         return false;
+     }
+ 
+-#if OPENSSL_VERSION_NUMBER >= 0x10101003L
++#if OPENSSL_VERSION_NUMBER >= 0x10101003L && HAVE_EVP_SM3
+ #if OPENSSL_VERSION_MAJOR < 3
+     if (ctx.halg == TPM2_ALG_SM3_256) {
+         ret = EVP_PKEY_set_alias_type(pkey, EVP_PKEY_SM2);
+diff --git a/tools/tpm2_getekcertificate.c b/tools/tpm2_getekcertificate.c
+index 79d859c7..fb525c63 100644
+--- a/tools/tpm2_getekcertificate.c
++++ b/tools/tpm2_getekcertificate.c
+@@ -519,7 +519,7 @@ static bool retrieve_web_endorsement_certificate(char *uri) {
+      * should not be used - Used only on platforms with older CA certificates.
+      */
+     if (ctx.SSL_NO_VERIFY) {
+-        rc = curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
++        rc = curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+         if (rc != CURLE_OK) {
+             LOG_ERR("curl_easy_setopt for CURLOPT_SSL_VERIFYPEER failed: %s",
+                     curl_easy_strerror(rc));
+@@ -564,7 +564,7 @@ static bool retrieve_web_endorsement_certificate(char *uri) {
+         goto out_easy_cleanup;
+     }
+ 
+-    rc = curl_easy_setopt(curl, CURLOPT_FAILONERROR, true);
++    rc = curl_easy_setopt(curl, CURLOPT_FAILONERROR, 1L);
+     if (rc != CURLE_OK) {
+         LOG_ERR("curl_easy_setopt for CURLOPT_FAILONERROR failed: %s",
+                 curl_easy_strerror(rc));
+-- 
+2.43.0
+
