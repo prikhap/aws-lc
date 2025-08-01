@@ -3,6 +3,10 @@ if(USE_CPP_INJECT_HASH)
         inject_hash.cpp
     )
 
+    add_executable(capture_hash_cpp
+        capture_hash.cpp
+    )
+
     target_include_directories(inject_hash_cpp PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_BINARY_DIR}

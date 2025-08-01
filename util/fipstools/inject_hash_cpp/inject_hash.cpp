@@ -159,11 +159,11 @@ private:
             for (const auto& section : elf->sections()) {
                 if (section.name() == ".text") {
                     text_section = &section;
-                    LOG_INFO("Found .text section at virtual address: 0x%lx", section.virtual_address());
+                    LOG_INFO("Found .text section at virtual address: 0x%llx", section.virtual_address());
                 }
                 if (section.name() == ".rodata") {
                     rodata_section = &section;
-                    LOG_INFO("Found .rodata section at virtual address: 0x%lx", section.virtual_address());
+                    LOG_INFO("Found .rodata section at virtual address: 0x%llx", section.virtual_address());
                 }
             }
 
